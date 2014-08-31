@@ -101,7 +101,7 @@ jfkdで1と2の入力を行うことができ、、yでBPMの計測ができる"
   (define-key tja-jfkd-mode-map "d" 'tja-insert-ka)
   (define-key tja-jfkd-mode-map "q" 'tja-jfkd-mode)
   (define-key tja-jfkd-mode-map "i" 'tja-format-buffer)
-  (define-key tja-jfkd-mode-map "y" 'tja-start-counting-bpm))
+  (define-key tja-jfkd-mode-map "y" 'tja-bpm-count))
 
 (defun tja-insert-dong ()
   (interactive)
@@ -110,27 +110,27 @@ jfkdで1と2の入力を行うことができ、、yでBPMの計測ができる"
   (interactive)
   (insert "2"))
 
-(defvar tja-count-time nil)
-(defvar tja-count nil)
+(defvar tja-bpm-count-start-time nil
+  "BPM")
+(defvar tja-bpm-counting-num nil)
 
-(defun tja-start-counting-bpm ()
+(defun tja-bpm-count ()
   "BPMの計測を行うコマンド。
 
 yを1拍子1打打つと、ミニバッファにBPMの予想値が表示される"
   (interactive)
   (cond ((eq last-command this-command)
-          (progn (setq tja-count (1+ tja-count))
-                 (let ((ct (current-time)))
-                   (message (format "BPM: %f "
-                                    (* 60.0 (/ tja-count
-                                               (+ (- (nth 1 ct) (nth 1 tja-count-time))
-                                                  (/ (- (nth 2 ct) (nth 2 tja-count-time))
-                                                     1000000.0)))))))))
-         (t
-          (progn (message "START")
-                 (setq tja-count-time (current-time)
-                       tja-count 0
-                       tja-flag t)))))
+         (progn (setq tja-bpm-counting-num (1+ tja-bpm-counting-num))
+                (let* ((ct (current-time))
+                       (sec (- (nth 1 ct) (nth 1 tja-bpm-count-start-time)))
+                       (msec (/ (- (nth 2 ct) (nth 2 tja-bpm-count-start-time))
+                                1000000.0))
+                       (bpm (* 60.0 (/ tja-bpm-counting-num (+ sec msec)))))
+                  (message (format "BPM: %f " bpm)))))
+        (t
+         (progn (message "START")
+                (setq tja-bpm-count-start-time (current-time)
+                      tja-bpm-counting-num 0)))))
 
 ;; face
 (defface tja-dong-face
