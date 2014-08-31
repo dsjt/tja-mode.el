@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2014  
 
-;; Author:  <tatsuhiro@TATSUHIRO-PC>
+;; Author:  dsjt
 ;; Keywords: faces
 
 ;; This program is free software; you can redistribute it and/or modify
