@@ -29,16 +29,15 @@
   (set (make-local-variable 'font-lock-multiline) t)
   (font-lock-add-keywords
    nil
-   '(("\\(.+\\)\\(:\\)\\(.*\\)"
+   '(("\\(SUBTITLE\\|TITLE\\|LEVEL\\|BPM\\|WAVE\\|OFFSET\\|BALLOON\\|SONGVOL\\|SEVOL\\|SCOREINIT\\|SCOREDIFF\\|COURSE\\|STYLE\\|GAME\\|LIFE\\|DEMOSTART\\|SIDE\\)\\(:\\)\\(.+\\)"
       (1 'font-lock-constant-face t)
       (2 'default t)
       (3 'default t))
-     ("##.+" . font-lock-comment-face)
+     ("\\(#BPMCHANGE\\|#MEASURE\\|#SCROLL\\|#DELAY\\) \\(.+\\)"
+      (1 'font-lock-constant-face t)
+      (2 'tja-change-number-face t))
+     ("#\\(START\\|END\\|GOGOSTART\\|GOGOEND\\|BMSCROLL\\|HBSCROLL\\)" . font-lock-keyword-face)
      ("//.*" . font-lock-comment-face)
-     ("\\(#[^#\n]+ \\)\\(.+\\)"
-      (1 'font-lock-keyword-face)
-      (2 'tja-changed-number-face))
-     ("#.+" . font-lock-keyword-face)
      ("[13]" . 'tja-dong-face)
      ("[24]" . 'tja-ka-face)
      ("\\([567][0 ]+\\)\\(8\\)"
@@ -141,7 +140,7 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示される"
   '((t (:foreground "darkgray")))
   "face of ka sign"
   :group 'tja)
-(defface tja-changed-number-face
+(defface tja-change-number-face
   '((t (:foreground "yellow")))
   "face of ka sign"
   :group 'tja)
