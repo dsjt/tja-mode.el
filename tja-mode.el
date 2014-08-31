@@ -20,7 +20,12 @@
 
 ;;; Commentary:
 
-;; 
+;; This program provides a major mode for editting ".tja" file. ".tja"
+;; file is for taiko sanjiro.
+
+;;; Install
+
+;; (require 'tja-mode)
 
 ;;; Code:
 
