@@ -45,9 +45,9 @@
       (2 'tja-renda-end-face))
      ("[0,]" . 'tja-rest-face)
      ))
-  (define-key tja-mode-map "\C-c\C-l" 'tja-format-line)
-  (define-key tja-mode-map "\C-c\C-h" 'tja-format-buffer)
-  (define-key tja-mode-map "\C-c\C-j" 'tja-jfkd-mode))
+  (define-key tja-mode-map (kbd "C-c C-l") 'tja-format-line)
+  (define-key tja-mode-map (kbd "C-c C-h") 'tja-format-buffer)
+  (define-key tja-mode-map (kbd "C-c C-j") 'tja-jfkd-mode))
 
 (defun tja-format-line (&optional rhythm)
   "Œ»İs‚ğ®—ñ‚·‚éB"
