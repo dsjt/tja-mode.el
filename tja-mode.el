@@ -30,6 +30,10 @@
 ;;; Code:
 
 
+(defvar tja-bpm-count-start-time nil
+  "BPM")
+(defvar tja-bpm-counting-num nil)
+
 (define-derived-mode tja-mode nil "Tja" "tjaモード"
   (set (make-local-variable 'font-lock-multiline) t)
   (font-lock-add-keywords
@@ -57,7 +61,7 @@
 (defun tja-format-line (&optional rhythm)
   "現在行を整列する。"
   (interactive "P")
-  (setq rhythm (or rhythm 4))
+  (or rhythm (setq rhythm 4))
   (save-excursion
     (let* ((cur-str (replace-regexp-in-string "[\s]" "" (buffer-substring (point-at-bol) (point-at-eol))))
            (split-num (ceiling (/ (1- (length cur-str)) (float rhythm))))
@@ -91,7 +95,7 @@
 (define-minor-mode tja-jfkd-mode
   "tja-mode内でjfkdで入力を行うモード
 
-jfkdで1と2の入力を行うことができ、、yでBPMの計測ができる"
+jfkdで1と2の入力を行うことができ、yでBPMの計測ができる"
   :init-value nil
   :lighter " jfkd"
   :keymap 'tja-jfkd-mode-map
@@ -110,9 +114,6 @@ jfkdで1と2の入力を行うことができ、、yでBPMの計測ができる"
   (interactive)
   (insert "2"))
 
-(defvar tja-bpm-count-start-time nil
-  "BPM")
-(defvar tja-bpm-counting-num nil)
 
 (defun tja-bpm-count ()
   "BPMの計測を行うコマンド。
@@ -156,8 +157,6 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示される"
 (defface tja-renda-end-face
   '((t (:foreground "maroon")))
   "face of ka sign"
-
-
   :group 'tja)
 
 (provide 'tja-mode)
