@@ -27,8 +27,14 @@
 
 ;; (require 'tja-mode)
 
+;; Attention
+
+;; key-chordモードを使用している場合、tja-jfkd-traceモードは正常に機能しません。なので、(key-chord-mode -1) を評価するなどして、モードを切ってください。
+;; 
+
 ;;; Code:
 
+(require 'cl)
 
 (defvar tja-bpm-count-start-time nil
   "BPM")
@@ -42,7 +48,8 @@
   "")
 (defvar tja-trace-progress-flag nil
   "現在、トレースが進行中であるかどうかを示します。")
-(defvar tja-trace-bar-num 0)
+(defvar tja-trace-bar-num 0
+  "現在トレースしている小節番号")
 (defvar tja-trace-bar nil)
 (defvar tja-trace-bar-time nil)
 (defvar tja-trace-gap nil)
@@ -112,19 +119,17 @@
                         'tja-trace)))
 
 (defun tja-trace ()
-  (message "第 %d 小節"
-           (setq tja-trace-bar-num (+ 1 tja-trace-bar-num)))
   (let ((end (current-time))
         (tl tja-trace-list))
     (setq tja-trace-list nil)
     (let ((beg (subtract-time end tja-trace-bar-time)))
       (tja-trace-insert (tja-trace-calc beg end tl)))))
 
-(defun tja-trace-insert (vect)
-  (apply 'insert (loop for x from 0 to (- tja-trace-division 1)
-                       collect (number-to-string (aref vect x))))
-  (tja-format-line)
+(defun tja-trace-insert (list)
+  (dolist (x list)
+    (insert (number-to-string x)))
   (insert ",")
+  (tja-format-line)
   (insert "\n"))
 
 (defun tja-trace-start ()
@@ -135,27 +140,39 @@
 
 (defun tja-trace-calc (beg end tl)
   "return vect"
-  (let ((vect (make-vector tja-trace-division 0))
-        y) 
+  (let ((output ())
+        (tl (nreverse (cons (cons end 0) tl))) ;最初に(end . 0)を
+                                        ;くっつけて、反転
+        (last-x (cons beg 0))) 
     (dolist (x tl)
-      (let ((num (tja-trace-order-num beg end (car x))))
-        (cond ((or (< num 0) (> num tja-trace-division)))
-              ((= (aref vect num) 0)
-               (aset vect num (cdr x)))
+      (let ((sub (- (float-time (car x))
+                    (float-time (car last-x)))))
+        (cond ((< sub 0) t)
+              ((= (cdr last-x) 0) (push (cdr x) output))
+              ((= (cdr x) 0)
+               (loop for x from 1 to (- tja-trace-division (length output))
+                     do (push 0 output)))
+              ((< sub (* tja-trace-gap 1.1)) ;本来はsubを小さくしたいが、破棄領域が増えてしまうので、やむなく1.33。
+                                        ;最大2
+               
+               (let ((x-note (cdr x))
+                     (l-note (cdr last-x)))
+                 (cond ((= l-note 0)
+                        (push (cdr x) output)) ;(cons beg 0)への対応
+                       ((and (= x-note l-note) (= x-note 1))
+                        (setq output (cons 3 (cdr output))))
+                       ((and (= x-note l-note) (= x-note 2))
+                        (setq output (cons 4 (cdr output))))
+                       (t t))                ;後々、連打とみなすべきかも
+                 ))
               (t
-               (let ((xx (float-time (car x)))
-                     (yy (float-time (car y))))
-                 (when (> (- yy xx) tja-trace-gap)
-                   (if (< (/ (+ xx yy) 2.0) (* num tja-trace-gap 2.0))
-                       (aset vect (1- num) (cdr x))
-                     (aset vect num (cdr x))
-                     (aset vect (1+ num) (cdr y))))))
-              ;; ((= (aref vect num) (cdr x))
-              ;;  (and (< (1+ num) tja-trace-division)
-              ;;       (aset vect (1+ num) (cdr x))))
-              )
-        (setq y x)))
-    vect))
+               (let ((num (floor (/ (- sub (* tja-trace-gap 1)) (* tja-trace-gap 2.0)))))
+                 (loop for x from 1 to num
+                       do (push 0 output))
+                 (push (cdr x) output))))) 
+      (setq last-x x))
+    (reverse output)))
+
 
 (defun tja-trace-order-num (beg end time)
   (let ((bar (float-time (subtract-time end beg)))
@@ -165,6 +182,7 @@
 (defun tja-trace-quit ()
   (interactive)
   (and tja-timer (cancel-timer tja-timer))
+  (setq tja-trace-list nil)
   (if tja-trace-progress-flag
       (progn (setq tja-trace-progress-flag nil)
              (setq tja-trace-bar-num 0))
@@ -201,7 +219,7 @@
   (setq tja-trace-conf-flag t
         tja-trace-bar (* (/ 60.0 tja-bpm) tja-trace-rhythm)
         tja-trace-bar-time (seconds-to-time tja-trace-bar)
-        tja-trace-gap (/ (/ tja-trace-bar tja-trace-division)  2.0)))
+        tja-trace-gap (/ (/ tja-trace-bar tja-trace-division) 2.0)))
 
 (defun tja-bpm-count ()
   "BPMの計測を行うコマンド。
@@ -257,7 +275,7 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示され�
   (setq tja-trace-progress-flag nil)
   (setq tja-trace-list nil)
   (if tja-jfkd-trace-mode
-      (tja-auto-bpm-conf)))
+      (or tja-bpm (tja-auto-bpm-conf))))
 
 (define-minor-mode tja-jfkd-mode
   "tja-mode内でjfkdで入力を行うモード
