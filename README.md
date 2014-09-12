@@ -1,18 +1,18 @@
 # tja-mode.el
 
-## �T�v
+## 概要
 
-tja-mode.el�͑��ۂ��񎟘Y�̕��ʃt�@�C����ҏW���邽�߂̃��W���[���[�h�ł��B
+tja-mode.elは太鼓さん次郎の譜面ファイルを編集するためのメジャーモードです。
 
-## �@�\
+## 機能
 
-* �F�����@�\
-* BPM�v���@�\
-* �s���w��̔��q���Ŕ��p�X�y�[�X����
+* 色分け機能
+* BPM計測機能
+* 行を指定の拍子数で半角スペース分割
 
-## �������@
+## 導入方法
 
 ```` emacs-lisp
-(add-to-list 'load-path "tja-mode.el�ւ̃p�X")
+(add-to-list 'load-path "tja-mode.elへのパス")
 (require 'tja-mode)
 ````
