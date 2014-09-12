@@ -73,9 +73,9 @@
 (defun tja-format-line (&optional rhythm)
   "現在行を整列する。"
   (interactive "P")
-  (or rhythm (setq rhythm 4))
+  (setq rhythm (or rhythm 4))
   (save-excursion
-    (let* ((cur-str (replace-regexp-in-string "[\s]" "" (buffer-substring (point-at-bol) (point-at-eol))))
+    (let* ((cur-str (replace-regexp-in-string "\s" "" (buffer-substring-no-properties (point-at-bol) (point-at-eol))))
            (split-num (ceiling (/ (1- (length cur-str)) (float rhythm))))
            (time 1)
            (base-str (substring cur-str 0 split-num))
@@ -103,14 +103,6 @@
       (tja-format-line tja-trace-rhythm)
       (goto-char (point-at-eol)))))
 
-(defun tja-insert-dong ()
-  (interactive)
-  (insert "1"))
-
-(defun tja-insert-ka ()
-  (interactive)
-  (insert "2"))
-
 (defun tja-set-timer ()
   (setq tja-timer
         (run-with-timer (- tja-trace-bar tja-trace-gap)
@@ -128,9 +120,7 @@
 (defun tja-trace-insert (list)
   (dolist (x list)
     (insert (number-to-string x)))
-  (insert ",")
-  (tja-format-line)
-  (insert "\n"))
+  (insert ",\n"))
 
 (defun tja-trace-start ()
   (if tja-trace-conf-flag
@@ -148,18 +138,14 @@
       (let ((sub (- (float-time (car x))
                     (float-time (car last-x)))))
         (cond ((< sub 0) t)
-              ((= (cdr last-x) 0) (push (cdr x) output))
+              ((= (cdr last-x) 0) (push (cdr x) output)) ;(cons beg 0)への対応
               ((= (cdr x) 0)
                (loop for x from 1 to (- tja-trace-division (length output))
-                     do (push 0 output)))
-              ((< sub (* tja-trace-gap 1.1)) ;本来はsubを小さくしたいが、破棄領域が増えてしまうので、やむなく1.33。
-                                        ;最大2
-               
+                     do (push 0 output))) ;(cond end 0)への対応
+              ((< sub (* tja-trace-gap 1))
                (let ((x-note (cdr x))
                      (l-note (cdr last-x)))
-                 (cond ((= l-note 0)
-                        (push (cdr x) output)) ;(cons beg 0)への対応
-                       ((and (= x-note l-note) (= x-note 1))
+                 (cond ((and (= x-note l-note) (= x-note 1))
                         (setq output (cons 3 (cdr output))))
                        ((and (= x-note l-note) (= x-note 2))
                         (setq output (cons 4 (cdr output))))
@@ -172,7 +158,6 @@
                  (push (cdr x) output))))) 
       (setq last-x x))
     (reverse output)))
-
 
 (defun tja-trace-order-num (beg end time)
   (let ((bar (float-time (subtract-time end beg)))
@@ -276,21 +261,6 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示され�
   (setq tja-trace-list nil)
   (if tja-jfkd-trace-mode
       (or tja-bpm (tja-auto-bpm-conf))))
-
-(define-minor-mode tja-jfkd-mode
-  "tja-mode内でjfkdで入力を行うモード
-
-jfkdで1と2の入力を行うことができ、yでBPMの計測ができる"
-  :init-value nil
-  :lighter " jfkd"
-  :keymap 'tja-jfkd-mode-map
-  (define-key tja-jfkd-mode-map "j" 'tja-insert-dong)
-  (define-key tja-jfkd-mode-map "f" 'tja-insert-dong)
-  (define-key tja-jfkd-mode-map "k" 'tja-insert-ka)
-  (define-key tja-jfkd-mode-map "d" 'tja-insert-ka)
-  (define-key tja-jfkd-mode-map "q" 'tja-jfkd-mode)
-  (define-key tja-jfkd-mode-map "i" 'tja-format-buffer)
-  (define-key tja-jfkd-mode-map "y" 'tja-bpm-count))
 
 ;; face
 (defface tja-dong-face
