@@ -60,33 +60,8 @@
     (define-key map (kbd "d") 'tja-trace-ka)
     (define-key map (kbd "q") 'tja-trace-quit)
     (define-key map (kbd "y") 'tja-bpm-count)
-    (define-key map (kbd "c") 'tja-trace-conf)
+    (define-key map (kbd "c") 'tja-confirm-bpm)
     map))
-
-(define-derived-mode tja-mode nil "Tja" "tjaモード"
-  (set (make-local-variable 'font-lock-multiline) t)
-  (font-lock-add-keywords
-   nil
-   '(
-     ("//.*" . font-lock-comment-face)
-     ("\\(SUBTITLE\\|TITLE\\|LEVEL\\|BPM\\|WAVE\\|OFFSET\\|BALLOON\\|SONGVOL\\|SEVOL\\|SCOREINIT\\|SCOREDIFF\\|COURSE\\|STYLE\\|GAME\\|LIFE\\|DEMOSTART\\|SIDE\\)\\(:\\)\\(.+\\)"
-      (1 'font-lock-constant-face t)
-      (2 'default t)
-      (3 'default t))
-     ("\\(#BPMCHANGE\\|#MEASURE\\|#SCROLL\\|#DELAY\\) \\(.+\\)"
-      (1 'font-lock-constant-face t)
-      (2 'tja-change-number-face t))
-     ("#\\(START\\|END\\|GOGOSTART\\|GOGOEND\\|BMSCROLL\\|HBSCROLL\\)" . font-lock-keyword-face)
-     ("[13]" . 'tja-dong-face)
-     ("[24]" . 'tja-ka-face)
-     ("\\([567][0 ]+\\)\\(8\\)"
-      (1 'tja-renda-face)
-      (2 'tja-renda-end-face))
-     ("[0,]" . 'tja-rest-face)
-     ))
-  (define-key tja-mode-map (kbd "C-c C-l") 'tja-format-line)
-  (define-key tja-mode-map (kbd "C-c C-h") 'tja-format-buffer)
-  (define-key tja-mode-map (kbd "C-c C-j") 'tja-jfkd-trace-mode))
 
 (defun tja-format-line (&optional rhythm)
   "現在行を整列する。"
@@ -121,21 +96,6 @@
       (tja-format-line tja-trace-rhythm)
       (goto-char (point-at-eol)))))
 
-(define-minor-mode tja-jfkd-mode
-  "tja-mode内でjfkdで入力を行うモード
-
-jfkdで1と2の入力を行うことができ、yでBPMの計測ができる"
-  :init-value nil
-  :lighter " jfkd"
-  :keymap 'tja-jfkd-mode-map
-  (define-key tja-jfkd-mode-map "j" 'tja-insert-dong)
-  (define-key tja-jfkd-mode-map "f" 'tja-insert-dong)
-  (define-key tja-jfkd-mode-map "k" 'tja-insert-ka)
-  (define-key tja-jfkd-mode-map "d" 'tja-insert-ka)
-  (define-key tja-jfkd-mode-map "q" 'tja-jfkd-mode)
-  (define-key tja-jfkd-mode-map "i" 'tja-format-buffer)
-  (define-key tja-jfkd-mode-map "y" 'tja-bpm-count))
-
 (defun tja-insert-dong ()
   (interactive)
   (insert "1"))
@@ -143,16 +103,6 @@ jfkdで1と2の入力を行うことができ、yでBPMの計測ができる"
 (defun tja-insert-ka ()
   (interactive)
   (insert "2"))
-
-(define-minor-mode tja-jfkd-trace-mode
-  ""
-  :keymap 'tja-jfkd-mode-map
-  :init-value nil
-  :lighter " trace"
-  (setq tja-trace-progress-flag nil)
-  (setq tja-trace-list nil)
-  (if tja-jfkd-trace-mode
-      (tja-auto-bpm-conf)))
 
 (defun tja-set-timer ()
   (setq tja-timer
@@ -215,9 +165,10 @@ jfkdで1と2の入力を行うことができ、yでBPMの計測ができる"
 (defun tja-trace-quit ()
   (interactive)
   (and tja-timer (cancel-timer tja-timer))
-  (setq tja-trace-progress-flag nil)
-  (setq tja-trace-bar-num 0)
-  (tja-jfkd-trace-mode -1))
+  (if tja-trace-progress-flag
+      (progn (setq tja-trace-progress-flag nil)
+             (setq tja-trace-bar-num 0))
+    (tja-jfkd-trace-mode -1)))
 
 (defun tja-trace-dong ()
   (interactive)
@@ -229,24 +180,28 @@ jfkdで1と2の入力を行うことができ、yでBPMの計測ができる"
   (or tja-trace-progress-flag (tja-trace-start))
   (add-to-list 'tja-trace-list (cons (current-time) 2)))
 
-(defun tja-trace-conf ()
+(defun tja-confirm-bpm ()
   (interactive)
   (tja-auto-bpm-conf)
   (setq tja-bpm (string-to-number (read-string "BPM:" tja-bpm-init 'tja-hist nil)))
   (if (> tja-bpm 0)
-      (progn (setq tja-trace-conf-flag t
-                   tja-trace-bar (* (/ 60.0 tja-bpm) tja-trace-rhythm)
-                   tja-trace-bar-time (seconds-to-time tja-trace-bar)
-                   tja-trace-gap (/ (/ tja-trace-bar tja-trace-division)  1.8)))
-    (progn (setq tja-trace-conf-flag nil)
+      (tja-trace-conf)
+      (progn (setq tja-trace-conf-flag nil)
            (message "不適切なBPMです。"))))
+
 (defun tja-auto-bpm-conf ()
   (save-excursion
     (goto-char (point-min))
     (and (re-search-forward "\\(^BPM:\\)\\([ 0-9]+$\\)")
          (setq tja-bpm-init (match-string 2))
          (setq tja-bpm (string-to-number tja-bpm-init))
-         (setq tja-trace-conf t))))
+         (tja-trace-conf))))
+
+(defun tja-trace-conf ()
+  (setq tja-trace-conf-flag t
+        tja-trace-bar (* (/ 60.0 tja-bpm) tja-trace-rhythm)
+        tja-trace-bar-time (seconds-to-time tja-trace-bar)
+        tja-trace-gap (/ (/ tja-trace-bar tja-trace-division)  2.0)))
 
 (defun tja-bpm-count ()
   "BPMの計測を行うコマンド。
@@ -265,6 +220,59 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示され�
          (progn (message "START")
                 (setq tja-bpm-count-start-time (current-time)
                       tja-bpm-counting-num 0)))))
+
+
+;; define mode
+
+(define-derived-mode tja-mode nil "Tja" "tjaモード"
+  (set (make-local-variable 'font-lock-multiline) t)
+  (font-lock-add-keywords
+   nil
+   '(
+     ("//.*" . font-lock-comment-face)
+     ("\\(SUBTITLE\\|TITLE\\|LEVEL\\|BPM\\|WAVE\\|OFFSET\\|BALLOON\\|SONGVOL\\|SEVOL\\|SCOREINIT\\|SCOREDIFF\\|COURSE\\|STYLE\\|GAME\\|LIFE\\|DEMOSTART\\|SIDE\\)\\(:\\)\\(.+\\)"
+      (1 'font-lock-constant-face t)
+      (2 'default t)
+      (3 'default t))
+     ("\\(#BPMCHANGE\\|#MEASURE\\|#SCROLL\\|#DELAY\\) \\(.+\\)"
+      (1 'font-lock-constant-face t)
+      (2 'tja-change-number-face t))
+     ("#\\(START\\|END\\|GOGOSTART\\|GOGOEND\\|BMSCROLL\\|HBSCROLL\\)" . font-lock-keyword-face)
+     ("[13]" . 'tja-dong-face)
+     ("[24]" . 'tja-ka-face)
+     ("\\([567][0 ]+\\)\\(8\\)"
+      (1 'tja-renda-face)
+      (2 'tja-renda-end-face))
+     ("[0,]" . 'tja-rest-face)
+     ))
+  (define-key tja-mode-map (kbd "C-c C-l") 'tja-format-line)
+  (define-key tja-mode-map (kbd "C-c C-h") 'tja-format-buffer)
+  (define-key tja-mode-map (kbd "C-c C-j") 'tja-jfkd-trace-mode))
+
+(define-minor-mode tja-jfkd-trace-mode
+  ""
+  :keymap 'tja-jfkd-mode-map
+  :init-value nil
+  :lighter " trace"
+  (setq tja-trace-progress-flag nil)
+  (setq tja-trace-list nil)
+  (if tja-jfkd-trace-mode
+      (tja-auto-bpm-conf)))
+
+(define-minor-mode tja-jfkd-mode
+  "tja-mode内でjfkdで入力を行うモード
+
+jfkdで1と2の入力を行うことができ、yでBPMの計測ができる"
+  :init-value nil
+  :lighter " jfkd"
+  :keymap 'tja-jfkd-mode-map
+  (define-key tja-jfkd-mode-map "j" 'tja-insert-dong)
+  (define-key tja-jfkd-mode-map "f" 'tja-insert-dong)
+  (define-key tja-jfkd-mode-map "k" 'tja-insert-ka)
+  (define-key tja-jfkd-mode-map "d" 'tja-insert-ka)
+  (define-key tja-jfkd-mode-map "q" 'tja-jfkd-mode)
+  (define-key tja-jfkd-mode-map "i" 'tja-format-buffer)
+  (define-key tja-jfkd-mode-map "y" 'tja-bpm-count))
 
 ;; face
 (defface tja-dong-face
