@@ -33,6 +33,35 @@
 (defvar tja-bpm-count-start-time nil
   "BPM")
 (defvar tja-bpm-counting-num nil)
+(defvar tja-trace-list nil)
+(defvar tja-bpm nil)
+(defvar tja-timer nil)
+(defvar tja-trace-division 16
+  "")
+(defvar tja-trace-rhythm 4
+  "")
+(defvar tja-trace-progress-flag nil
+  "現在、トレースが進行中であるかどうかを示します。")
+(defvar tja-trace-bar-num 0)
+(defvar tja-trace-bar nil)
+(defvar tja-trace-bar-time nil)
+(defvar tja-trace-gap nil)
+(defvar tja-trace-conf-flag nil
+  "適切なBPMの設定など、トレースの設定が整っているかどうかを示します。")
+(defvar tja-hist nil)
+(defvar tja-bpm-init nil)
+(defvar tja-forward-num)
+(defvar tja-jfkd-mode-map (make-sparse-keymap))
+(defvar tja-jfkd-trace-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "j") 'tja-trace-dong)
+    (define-key map (kbd "f") 'tja-trace-dong)
+    (define-key map (kbd "k") 'tja-trace-ka)
+    (define-key map (kbd "d") 'tja-trace-ka)
+    (define-key map (kbd "q") 'tja-trace-quit)
+    (define-key map (kbd "y") 'tja-bpm-count)
+    (define-key map (kbd "c") 'tja-trace-conf)
+    map))
 
 (define-derived-mode tja-mode nil "Tja" "tjaモード"
   (set (make-local-variable 'font-lock-multiline) t)
@@ -81,7 +110,6 @@
         (delete-region (point-at-bol) (point-at-eol))
         (insert (concat base-str ","))))))
 
-(defvar tja-forward-num)
 (defun tja-format-buffer (&optional rhythm)
   "現在のバッファ全体を整列する"
   (interactive "P")
@@ -92,8 +120,6 @@
       (forward-char tja-forward-num)
       (tja-format-line tja-trace-rhythm)
       (goto-char (point-at-eol)))))
-
-(defvar tja-jfkd-mode-map (make-sparse-keymap))
 
 (define-minor-mode tja-jfkd-mode
   "tja-mode内でjfkdで入力を行うモード
@@ -113,36 +139,10 @@ jfkdで1と2の入力を行うことができ、yでBPMの計測ができる"
 (defun tja-insert-dong ()
   (interactive)
   (insert "1"))
+
 (defun tja-insert-ka ()
   (interactive)
   (insert "2"))
-
-(defvar tja-trace-list nil)
-(defvar tja-bpm nil)
-(defvar tja-timer nil)
-(defvar tja-trace-division 16
-  "")
-(defvar tja-trace-rhythm 4
-  "")
-(defvar tja-trace-progress-flag nil
-  "現在、トレースが進行中であるかどうかを示します。")
-(defvar tja-trace-bar-num 0)
-(defvar tja-trace-bar nil)
-(defvar tja-trace-bar-time nil)
-(defvar tja-trace-gap nil)
-(defvar tja-trace-conf-flag nil
-  "適切なBPMの設定など、トレースの設定が整っているかどうかを示します。")
-
-(defvar tja-jfkd-trace-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "j") 'tja-trace-dong)
-    (define-key map (kbd "f") 'tja-trace-dong)
-    (define-key map (kbd "k") 'tja-trace-ka)
-    (define-key map (kbd "d") 'tja-trace-ka)
-    (define-key map (kbd "q") 'tja-trace-quit)
-    (define-key map (kbd "y") 'tja-bpm-count)
-    (define-key map (kbd "c") 'tja-trace-conf)
-    map))
 
 (define-minor-mode tja-jfkd-trace-mode
   ""
@@ -228,9 +228,6 @@ jfkdで1と2の入力を行うことができ、yでBPMの計測ができる"
   (interactive)
   (or tja-trace-progress-flag (tja-trace-start))
   (add-to-list 'tja-trace-list (cons (current-time) 2)))
-
-(defvar tja-hist nil)
-(defvar tja-bpm-init nil)
 
 (defun tja-trace-conf ()
   (interactive)
