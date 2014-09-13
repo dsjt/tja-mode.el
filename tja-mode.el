@@ -79,25 +79,25 @@
   (setq rhythm (or rhythm tja-trace-rhythm))
   (save-excursion
     (forward-line 0)
-    (let ((str-beg (re-search-forward "^[0-9 \n]."))
+    (let ((str-beg (point-at-bol))
           (str-end (search-forward ",")))
-      (unless (and str-beg str-end) 
-        (let* ((str
-                (replace-regexp-in-string "[\s,]"
-                                          (buffer-substring-no-properties str-beg
-                                                                          str-end)))
-               (sp-num (floor (/ (length str) rhythm)))
-               new-str)
-          (loop for x from 1 to rhythm
-                do (setq new-str (concat new-str (substring str (- (* x rhythm) sp-num) (* x rhythm)))))
-          (delete-region str-beg str-end)
-          (insert (concat str ",")))))))
+      (let* ((str
+              (replace-regexp-in-string "[\s,]" ""
+                                        (buffer-substring-no-properties str-beg
+                                                                        str-end)))
+             (sp-num (floor (/ (length str) rhythm))))
+        (if (not (= sp-num 0))
+            (progn
+              (goto-char (point-at-bol))
+              (loop repeat (1- rhythm) do
+                    (progn (goto-char (+ sp-num (point)))
+                           (insert " ")))))))))
 
 (defun tja-partition-buffer (&optional rhythm)
   "現在のバッファ全体を整列する"
   (interactive "P")
   (setq rhythm (or rhythm 4))
-  (save-excursionn
+  (save-excursion
     (goto-char (point-min))
     (while (setq tja-forward-num (string-match "^[0123456789 ]+," (buffer-substring (point) (point-max))))
       (forward-char tja-forward-num)
