@@ -70,37 +70,38 @@
     (define-key map (kbd "c") 'tja-confirm-bpm)
     map))
 
-(defun tja-format-line (&optional rhythm)
+(defvar tja-comment-prefix "//"
+  "TeX comment prefix.")
+
+(defun tja-partition-line (&optional rhythm)
   "現在行を整列する。"
   (interactive "P")
-  (setq rhythm (or rhythm 4))
+  (setq rhythm (or rhythm tja-trace-rhythm))
   (save-excursion
-    (let* ((cur-str (replace-regexp-in-string "\s" "" (buffer-substring-no-properties (point-at-bol) (point-at-eol))))
-           (split-num (ceiling (/ (1- (length cur-str)) (float rhythm))))
-           (time 1)
-           (base-str (substring cur-str 0 split-num))
-           (start-char split-num))
-      (when (string-match "^[0-9].+," cur-str)
-        (setq cur-str (substring cur-str 0 (1- (length cur-str))))
-        (while (< time rhythm)
-          (setq base-str (concat base-str
-                                 " "
-                                 (substring cur-str
-                                            (* split-num time)
-                                            (min (length cur-str) (* split-num (+ time 1)))))
-                time (1+ time)))
-        (delete-region (point-at-bol) (point-at-eol))
-        (insert (concat base-str ","))))))
+    (forward-line 0)
+    (let ((str-beg (re-search-forward "^[0-9 \n]."))
+          (str-end (search-forward ",")))
+      (unless (and str-beg str-end) 
+        (let* ((str
+                (replace-regexp-in-string "[\s,]"
+                                          (buffer-substring-no-properties str-beg
+                                                                          str-end)))
+               (sp-num (floor (/ (length str) rhythm)))
+               new-str)
+          (loop for x from 1 to rhythm
+                do (setq new-str (concat new-str (substring str (- (* x rhythm) sp-num) (* x rhythm)))))
+          (delete-region str-beg str-end)
+          (insert (concat str ",")))))))
 
-(defun tja-format-buffer (&optional rhythm)
+(defun tja-partition-buffer (&optional rhythm)
   "現在のバッファ全体を整列する"
   (interactive "P")
   (setq rhythm (or rhythm 4))
-  (save-excursion
+  (save-excursionn
     (goto-char (point-min))
     (while (setq tja-forward-num (string-match "^[0123456789 ]+," (buffer-substring (point) (point-max))))
       (forward-char tja-forward-num)
-      (tja-format-line tja-trace-rhythm)
+      (tja-partition-line tja-trace-rhythm)
       (goto-char (point-at-eol)))))
 
 (defun tja-set-timer ()
@@ -224,7 +225,6 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示され�
                 (setq tja-bpm-count-start-time (current-time)
                       tja-bpm-counting-num 0)))))
 
-
 ;; define mode
 
 (define-derived-mode tja-mode nil "Tja" "tjaモード"
@@ -232,24 +232,25 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示され�
   (font-lock-add-keywords
    nil
    '(
-     ("//.*" . font-lock-comment-face)
      ("\\(SUBTITLE\\|TITLE\\|LEVEL\\|BPM\\|WAVE\\|OFFSET\\|BALLOON\\|SONGVOL\\|SEVOL\\|SCOREINIT\\|SCOREDIFF\\|COURSE\\|STYLE\\|GAME\\|LIFE\\|DEMOSTART\\|SIDE\\)\\(:\\)\\(.+\\)"
-      (1 'font-lock-constant-face t)
-      (2 'default t)
-      (3 'default t))
+      (1 'font-lock-constant-face nil)
+      (2 'default nil)
+      (3 'default nil))
      ("\\(#BPMCHANGE\\|#MEASURE\\|#SCROLL\\|#DELAY\\) \\(.+\\)"
       (1 'font-lock-constant-face t)
       (2 'tja-change-number-face t))
      ("#\\(START\\|END\\|GOGOSTART\\|GOGOEND\\|BMSCROLL\\|HBSCROLL\\)" . font-lock-keyword-face)
      ("[13]" . 'tja-dong-face)
      ("[24]" . 'tja-ka-face)
-     ("\\([567][0 ]+\\)\\(8\\)"
+     ("\\([567][0 \s]*\\)\\(8\\)"
       (1 'tja-renda-face)
       (2 'tja-renda-end-face))
      ("[0,]" . 'tja-rest-face)
-     ))
-  (define-key tja-mode-map (kbd "C-c C-l") 'tja-format-line)
-  (define-key tja-mode-map (kbd "C-c C-h") 'tja-format-buffer)
+     ("\\(//.*\\)"
+      (0 'font-lock-comment-face t))))
+  (setq comment-start tja-comment-prefix)
+  (define-key tja-mode-map (kbd "C-c C-l") 'tja-partition-line)
+  (define-key tja-mode-map (kbd "C-c C-h") 'tja-partition-buffer)
   (define-key tja-mode-map (kbd "C-c C-j") 'tja-jfkd-trace-mode))
 
 (define-minor-mode tja-jfkd-trace-mode
