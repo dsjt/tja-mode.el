@@ -71,24 +71,25 @@
     map))
 
 (defvar tja-comment-prefix "//"
-  "TeX comment prefix.")
+  "Tja comment prefix.")
 
 (defun tja-partition-line (&optional rhythm)
   "現在行を整列する。"
   (interactive "P")
   (setq rhythm (or rhythm tja-trace-rhythm))
   (save-excursion
-    (forward-line 0)
     (let ((str-beg (point-at-bol))
           (str-end (search-forward ",")))
       (let* ((str
-              (replace-regexp-in-string "[\s,]" ""
+              (replace-regexp-in-string "[ \s]" ""
                                         (buffer-substring-no-properties str-beg
                                                                         str-end)))
-             (sp-num (floor (/ (length str) rhythm))))
+             (sp-num (floor (/ (1- (length str)) rhythm))))
+        (delete-region str-beg str-end)
+        (insert str)
         (if (not (= sp-num 0))
             (progn
-              (goto-char (point-at-bol))
+              (goto-char str-beg)
               (loop repeat (1- rhythm) do
                     (progn (goto-char (+ sp-num (point)))
                            (insert " ")))))))))
@@ -103,6 +104,34 @@
       (forward-char tja-forward-num)
       (tja-partition-line tja-trace-rhythm)
       (goto-char (point-at-eol)))))
+
+(defun tja-fill-region (beg end)
+  (interactive "r")
+  (save-excursion
+    (let ((str (buffer-substring-no-properties beg end)))
+      (kill-region beg end)
+      (insert (replace-regexp-in-string "\\([^a-z]\\) \\([0-9,]\\)" "\\1\\2" str)))))
+
+(defun tja-numbering-buffer (&optional interval)
+  (interactive "P")
+  (setq interval (or interval tja-numbering-interval))
+  (save-excursion
+    (goto-char (point-min))
+    (re-search-forward "#START")
+    (let ((counter 1)
+          flag)
+      (while (re-search-forward "[0-9 ]*,[ \s]*")
+        (if (equal "//" (thing-at-point 'symbol))
+            (progn
+              (kill-region (point) (point-at-eol))
+              (insert " ")))
+        (if (and (eolp) flag)
+            (progn
+              (insert (format "// %d" counter))
+              (setq flag nil))
+          (and (= (% counter interval) (1- interval)) (setq flag t)))
+        (setq counter (1+ counter))))))
+(defvar tja-numbering-interval 4)
 
 (defun tja-set-timer ()
   (setq tja-timer
@@ -242,7 +271,7 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示され�
      ("#\\(START\\|END\\|GOGOSTART\\|GOGOEND\\|BMSCROLL\\|HBSCROLL\\)" . font-lock-keyword-face)
      ("[13]" . 'tja-dong-face)
      ("[24]" . 'tja-ka-face)
-     ("\\([567][0 \s]*\\)\\(8\\)"
+     ("\\([567][0 ]*,?\n*[0 ]*\\)\\(8\\)"
       (1 'tja-renda-face)
       (2 'tja-renda-end-face))
      ("[0,]" . 'tja-rest-face)
@@ -251,7 +280,8 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示され�
   (setq comment-start tja-comment-prefix)
   (define-key tja-mode-map (kbd "C-c C-l") 'tja-partition-line)
   (define-key tja-mode-map (kbd "C-c C-h") 'tja-partition-buffer)
-  (define-key tja-mode-map (kbd "C-c C-j") 'tja-jfkd-trace-mode))
+  (define-key tja-mode-map (kbd "C-c C-j") 'tja-jfkd-trace-mode)
+  (define-key tja-mode-map (kbd "C-c C-q") 'tja-fill-region))
 
 (define-minor-mode tja-jfkd-trace-mode
   ""
