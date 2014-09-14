@@ -58,7 +58,13 @@
 (defvar tja-hist nil)
 (defvar tja-bpm-init nil)
 (defvar tja-forward-num)
-(defvar tja-jfkd-mode-map (make-sparse-keymap))
+(defvar tja-jfkd-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-l") 'tja-partition-line)
+    (define-key map (kbd "C-c C-h") 'tja-partition-buffer)
+    (define-key map (kbd "C-c C-j") 'tja-jfkd-trace-mode)
+    (define-key map (kbd "C-c C-q") 'tja-fill-region)
+    map))
 (defvar tja-jfkd-trace-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "j") 'tja-trace-dong)
@@ -131,6 +137,14 @@
               (setq flag nil))
           (and (= (% counter interval) (1- interval)) (setq flag t)))
         (setq counter (1+ counter))))))
+
+(defun tja-goto-bar (&optional bar)
+  (interactive "N:")
+  (goto-char (point-min))
+  (loop repeat bar do
+        (re-search-forward "^[0-9 \n]+,"))
+  (forward-line 0))
+
 (defvar tja-numbering-interval 4)
 
 (defun tja-set-timer ()
@@ -277,11 +291,7 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示され�
      ("[0,]" . 'tja-rest-face)
      ("\\(//.*\\)"
       (0 'font-lock-comment-face t))))
-  (setq comment-start tja-comment-prefix)
-  (define-key tja-mode-map (kbd "C-c C-l") 'tja-partition-line)
-  (define-key tja-mode-map (kbd "C-c C-h") 'tja-partition-buffer)
-  (define-key tja-mode-map (kbd "C-c C-j") 'tja-jfkd-trace-mode)
-  (define-key tja-mode-map (kbd "C-c C-q") 'tja-fill-region))
+  (setq comment-start tja-comment-prefix))
 
 (define-minor-mode tja-jfkd-trace-mode
   ""
