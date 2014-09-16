@@ -29,7 +29,7 @@
 
 ;; Attention
 
-;; key-chordモードを使用している場合、tja-jfkd-traceモードは正常に機能しません。なので、(key-chord-mode -1) を評価するなどして、モードを切ってください。
+;; key-chordモードを使用している場合、tja-traceモードは正常に機能しません。なので、(key-chord-mode -1) を評価するなどして、モードを切ってください。
 ;; 
 
 ;;; Code:
@@ -58,14 +58,16 @@
 (defvar tja-hist nil)
 (defvar tja-bpm-init nil)
 (defvar tja-forward-num)
-(defvar tja-jfkd-mode-map
+(defvar tja-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-l") 'tja-partition-line)
     (define-key map (kbd "C-c C-h") 'tja-partition-buffer)
-    (define-key map (kbd "C-c C-j") 'tja-jfkd-trace-mode)
+    (define-key map (kbd "C-c C-j") 'tja-trace-mode)
     (define-key map (kbd "C-c C-q") 'tja-fill-region)
+    (define-key map (kbd "C-c C-M-p") 'tja-start)
     map))
-(defvar tja-jfkd-trace-mode-map
+(defvar tja-trace-mode-map
+
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "j") 'tja-trace-dong)
     (define-key map (kbd "f") 'tja-trace-dong)
@@ -75,6 +77,8 @@
     (define-key map (kbd "y") 'tja-bpm-count)
     (define-key map (kbd "c") 'tja-confirm-bpm)
     map))
+(defvar taiko-default-directory ""
+  "taikojiro.exeのあるディレクトリを最後にスラッシュ付きで指定。C:/Users/TANAKA/game/など。")
 
 (defvar tja-comment-prefix "//"
   "Tja comment prefix.")
@@ -82,7 +86,9 @@
 (defun tja-partition-line (&optional rhythm)
   "現在行を整列する。"
   (interactive "P")
-  (setq rhythm (or rhythm tja-trace-rhythm))
+  (if rhythm
+      (setq tja-trace-rhythm rhythm)
+    (setq rhythm tja-trace-rhythm))
   (save-excursion
     (let ((str-beg (point-at-bol))
           (str-end (search-forward ",")))
@@ -215,7 +221,7 @@
   (if tja-trace-progress-flag
       (progn (setq tja-trace-progress-flag nil)
              (setq tja-trace-bar-num 0))
-    (tja-jfkd-trace-mode -1)))
+    (tja-trace-mode -1)))
 
 (defun tja-trace-dong ()
   (interactive)
@@ -268,6 +274,11 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示され�
                 (setq tja-bpm-count-start-time (current-time)
                       tja-bpm-counting-num 0)))))
 
+(defun tja-start ()
+  "現在の譜面で太鼓さん次郎を起動する。
+使用するには、使用するtaikojiro.exeのアドレスをtaiko-sanjiro-programに格納する必要があります。"
+  (interactive)
+  (start-process "taiko" "*taiko*" (concat taiko-default-directory "taikojiro.exe") (replace-regexp-in-string "/" "\\\\" buffer-file-name)))
 ;; define mode
 
 (define-derived-mode tja-mode nil "Tja" "tjaモード"
@@ -275,7 +286,7 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示され�
   (font-lock-add-keywords
    nil
    '(
-     ("\\(SUBTITLE\\|TITLE\\|LEVEL\\|BPM\\|WAVE\\|OFFSET\\|BALLOON\\|SONGVOL\\|SEVOL\\|SCOREINIT\\|SCOREDIFF\\|COURSE\\|STYLE\\|GAME\\|LIFE\\|DEMOSTART\\|SIDE\\)\\(:\\)\\(.+\\)"
+     ("\\(SUBTITLE\\|TITLE\\|LEVEL\\|BPM\\|WAVE\\|OFFSET\\|BALLOON\\|SONGVOL\\|SEVOL\\|SCOREINIT\\|SCOREDIFF\\|COURSE\\|STYLE\\|GAME\\|LIFE\\|DEMOSTART\\|SIDE\\|SCOREMODE\\)\\(:\\)\\(.+\\)"
       (1 'font-lock-constant-face nil)
       (2 'default nil)
       (3 'default nil))
@@ -293,14 +304,14 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示され�
       (0 'font-lock-comment-face t))))
   (setq comment-start tja-comment-prefix))
 
-(define-minor-mode tja-jfkd-trace-mode
+(define-minor-mode tja-trace-mode
   ""
-  :keymap 'tja-jfkd-mode-map
+  :keymap tja-trace-mode-map
   :init-value nil
   :lighter " trace"
   (setq tja-trace-progress-flag nil)
   (setq tja-trace-list nil)
-  (if tja-jfkd-trace-mode
+  (if tja-trace-mode
       (or tja-bpm (tja-auto-bpm-conf))))
 
 ;; face
