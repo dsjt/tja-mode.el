@@ -78,8 +78,8 @@
     (define-key map (kbd "y") 'tja-bpm-count)
     (define-key map (kbd "c") 'tja-confirm-bpm)
     map))
-(defvar taiko-default-directory ""
-  "taikojiro.exeのあるディレクトリを最後にスラッシュ付きで指定。C:/Users/TANAKA/game/など。")
+(defvar taiko-program ""
+  "taikojiro.exeのアドレスを指定。\"~/Taiko/taikojiro/exe\"など。")
 
 (defvar tja-comment-prefix "//"
   "Tja comment prefix.")
@@ -281,7 +281,7 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示され�
   "現在の譜面で太鼓さん次郎を起動する。
 使用するには、使用するtaikojiro.exeのアドレスをtaiko-sanjiro-programに格納する必要があります。"
   (interactive)
-  (start-process "taiko" "*taiko*" (concat taiko-default-directory "taikojiro.exe") (replace-regexp-in-string "/" "\\\\" buffer-file-name)))
+  (start-process "taiko" "*taiko*" taiko-program (replace-regexp-in-string "/" "\\\\" buffer-file-name)))
 
 ;; define mode
 
@@ -294,7 +294,7 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示され�
       (1 'font-lock-constant-face nil)
       (2 'default nil)
       (3 'default nil))
-     ("\\(#BPMCHANGE\\|#MEASURE\\|#SCROLL\\|#DELAY\\) \\(.+\\)"
+     ("\\(#BPMCHANGE\\|#MEASURE\\|#SCROLL\\|#DELAY\\) ??\\(.+\\)"
       (1 'font-lock-constant-face t)
       (2 'tja-change-number-face t))
      ("#\\(START\\|END\\|GOGOSTART\\|GOGOEND\\|BMSCROLL\\|HBSCROLL\\)" . font-lock-keyword-face)
