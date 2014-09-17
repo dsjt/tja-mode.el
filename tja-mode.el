@@ -145,8 +145,7 @@
               (insert (format "// %d" counter))
               (setq flag nil))
           (and (= (% counter interval) (1- interval)) (setq flag t)))
-        (setq counter (1+ counter)))))
-  nil)
+        (setq counter (1+ counter))))))
 
 (defun tja-goto-bar (&optional bar)
   (interactive "N:")
