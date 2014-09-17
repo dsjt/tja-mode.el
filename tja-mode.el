@@ -65,6 +65,7 @@
     (define-key map (kbd "C-c C-j") 'tja-trace-mode)
     (define-key map (kbd "C-c C-q") 'tja-fill-region)
     (define-key map (kbd "C-c C-M-p") 'tja-start)
+    (define-key map (kbd "C-c C-n") ' tja-numbering-buffer)
     map))
 (defvar tja-trace-mode-map
 
@@ -126,23 +127,26 @@
 
 (defun tja-numbering-buffer (&optional interval)
   (interactive "P")
-  (setq interval (or interval tja-numbering-interval))
+  (if (null interval)
+      (setq interval tja-numbering-interval)
+    (setq tja-numbering-interval interval))
   (save-excursion
     (goto-char (point-min))
     (re-search-forward "#START")
     (let ((counter 1)
           flag)
-      (while (re-search-forward "[0-9 ]*,[ \s]*")
+      (while (re-search-forward "[0-9 ]*,[ \s]*" nil t)
         (if (equal "//" (thing-at-point 'symbol))
             (progn
               (kill-region (point) (point-at-eol))
-              (insert " ")))
+              (just-one-space)))
         (if (and (eolp) flag)
             (progn
               (insert (format "// %d" counter))
               (setq flag nil))
           (and (= (% counter interval) (1- interval)) (setq flag t)))
-        (setq counter (1+ counter))))))
+        (setq counter (1+ counter)))))
+  nil)
 
 (defun tja-goto-bar (&optional bar)
   (interactive "N:")
@@ -279,6 +283,7 @@ yを1拍子1打打つと、ミニバッファにBPMの予想値が表示され�
 使用するには、使用するtaikojiro.exeのアドレスをtaiko-sanjiro-programに格納する必要があります。"
   (interactive)
   (start-process "taiko" "*taiko*" (concat taiko-default-directory "taikojiro.exe") (replace-regexp-in-string "/" "\\\\" buffer-file-name)))
+
 ;; define mode
 
 (define-derived-mode tja-mode nil "Tja" "tjaモード"
