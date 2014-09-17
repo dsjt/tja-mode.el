@@ -19,7 +19,7 @@ tja-mode.elは太鼓さん次郎の譜面ファイルを編集するためのメ
 (add-to-list 'load-path "tja-mode.elへのパス")
 (require 'tja-mode)
 
-// 必要な場合
+;; 必要な場合
 (setq taiko-program "taikojiro.exeへのパス")
 ````
 
