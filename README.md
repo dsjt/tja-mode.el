@@ -1,11 +1,7 @@
 # tja-mode.el
-
-## 概要
-
 tja-mode.elは太鼓さん次郎の譜面ファイルを編集するためのメジャーモードを提供します。
 
-## 機能
-
+## Description
 * 色分け機能
 * BPM計測機能
 * 行を指定の拍子数で半角スペース分割
@@ -13,21 +9,7 @@ tja-mode.elは太鼓さん次郎の譜面ファイルを編集するためのメ
 * 通常のプレイ方法での譜面のトレース
 * 現在の譜面を太鼓さん次郎で起動
 
-## 導入方法
-
-```` emacs-lisp
-(add-to-list 'load-path "tja-mode.elへのパス")
-(require 'tja-mode)
-
-;; 必要な場合
-(setq taiko-program "taikojiro.exeへのパス")
-````
-
-## 使い方
-
-キーマップは適宜、再設定してください。
-
-### tja-modeにおけるキーバインド
+## Usage
 C-c C-l
 tja-partition-line
 現在行の小節を指定の拍数で分割します。
@@ -82,6 +64,15 @@ BPMの計測を行います。
 拍子ごとにyを押すことにより、BPMを計算してミニバッファに表示します。
 
 
+## Install
+```` emacs-lisp
+(add-to-list 'load-path "tja-mode.elへのパス")
+(require 'tja-mode)
+
+;; 必要な場合
+(setq taiko-program "taikojiro.exeへのパス")
+````
+
 ## TODO
 
 * tja-trace-modeの入力の精度の調整
@@ -92,3 +83,11 @@ BPMの計測を行います。
 
 * ヘッダでtja-partition-lineなどを行った場合に予期しない場所が編集される。
 * 複数行にまたがる小節を適切に分割できない。
+## Licence
+
+[MIT]
+
+## Author
+
+[dsjt](https://github.com/dsjt)
+
