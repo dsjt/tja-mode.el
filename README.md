@@ -86,7 +86,7 @@ BPMの計測を行います。
 
 ## Licence
 
-[MIT]
+MIT
 
 ## Author
 
